@@ -3,11 +3,14 @@
 
 ### 1、定义
 
- - REmote DIctionary Server(Redis) 是一个由Salvatore
+ - Remote DIctionary Server(Redis) 是一个由Salvatore
    Sanfilippo写的key-value存储系统。 Redis是一个开源的使用ANSI
    C语言编写、遵守BSD协议、支持网络、可基于内存亦可持久化的日志型、Key-Value数据库，并提供多种语言的API。
  - 它通常被称为数据结构服务器，因为值（value）可以是 字符串(String), 哈希(Hash), 列表(list), 集合(sets)  和 有序集合(sorted sets)等类型。
-    ![中间件架构](https://img-blog.csdnimg.cn/20210121221549607.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3hpZWxvbmcwNTA5,size_16,color_FFFFFF,t_70)
+ - 单线程：因为Redis是基于内存的操作,CPU不是Redis的瓶颈,Redis的瓶颈最有可能是机器内存的大小或者网络带宽。既然单线程容易实现,而且CPU不会成为瓶颈,如果是多线程来回上下文切换比较耗时，还不如单线程，那就顺理成章地采用单线程的方案了。
+ - 单线程支持高并发：redis作为单进程模型的程序，为了充分利用多核CPU，常常在一台server上会启动多个实例。而为了减少切换的开销，有必要为每个实例指定其所运行的CPU。
+ - redis 的瓶颈在网络上
+ - ![中间件架构](https://img-blog.csdnimg.cn/20210121221549607.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3hpZWxvbmcwNTA5,size_16,color_FFFFFF,t_70)
 
 ####  1.1 缓存中间件 Memcache和Redis
 
@@ -160,7 +163,7 @@ EXPIRE key seconds
 
 思路：1、确定数据量（边界）dbsize命令：返回数据量大小
 
-​		   2、数据量小 可以用Keys指令: 语法：Keys [pattern]
+​		   2、数据量小 可以用Keys指令: 语法：Keys [pattern] 单个对象get key(如果为空返回 nil)
 
 ​		   3、数据量大 可以用 :SCAN cursor [MATCH pattern\] [COUNT count]
 
@@ -180,5 +183,158 @@ JAVA实现：
 
  定义一个循环，不断调用SCAN指令。直到下标+分页大于 总数。分页取出来的信息，用集合SET去重。
 
+#### 3.2 缓存雪崩、穿透、击穿
+
+[B站链接：](https://www.bilibili.com/video/BV1f5411b7ux?from=search&seid=5509058839420846836)
+
+![image-20210122225449606](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210122225449606.png)
+
+##### 3.2.1缓存雪崩：
+
+原理：缓存雪崩：大量缓存数据同时间失效，同事清空大量的缓存，导致用户直接发起大量请求到数据库，产生瓶颈。
+
+解决：
+
+1、生成随机失效的缓存时间数据；
+2、让缓存节点分布在不同的物理节点上；
+3、生成不失效的缓存数据；
+4、定时任务更新缓存数据；
+
+##### 3.2.2 缓存穿透：（穿透攻击）
+
+原理：
+
+用户请求数据，例如ID为负数，不存在缓存里，也不存在数据库里（但是会把空数据放入缓存），会造成缓存穿透。
+
+解决：
+
+1、无意义数据放入缓存，下一次相同请求就会命中缓存；如果参数变化，可以封IP。
+2、IP过滤；
+3、参数校验（参数-1或者不存在的参数）；
+4、布隆过滤器；
+
+##### 3.2.3 缓存击穿：（单个KEY失效）
+
+缓存失效：由于缓存热点键（秒杀、热门券）到了失效时间，导致用户请求直接访问数据库。
+
+解决：
+
+1、方案：过期时间（永不过期）。
+2、上锁。（zookeeper、redis分布式锁）缓存失效，只有单个线程抢到了锁，单个线程的I/O压力比较小，其余的线程抢不到锁就sleep()。
+
 ### 4、实现分布式锁
 
+####  4.1 核心问题:
+
+##### 	4.1.1互斥性：
+
+原子性操作：SETNX KEY VALUE(返回1 设置成功，返回0设置失败)，默认永久有效。可以设置过期时间。
+
+缺陷：不具备原子性：int res=(调用SETNX KEY VALUE)和设置过期时间是两个操作。
+
+​			如果set过程出现异常，挂掉，就无法设置过期时间。其他线程无法执行CPU独占资源空间。
+
+```
+int res=(调用SETNX KEY VALUE)
+if(res=1){//设置成功
+	设置过期时间
+	执行CPU独占资源空间
+}else{//已经有值
+ 	get key获取值
+ 	根据业务逻辑判断是否重设过期时间
+}
+```
+
+​	安全性：
+
+​	死锁：
+
+​	容错：
+
+#### 4.2用以下原子性命令：
+
+![image-20210122234150434](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210122234150434.png)
+
+
+
+### 5、异步队列
+
+####  5.1 List队列：
+
+​	Rpush生产消息，LPOP消费消息（lpop有值，证明有消息，取不到证明没有值）。
+
+​    缺点：没有等待队列里有值就去直接消费。
+
+​    弥补：应用层引入sleep机制去调用LPOP重试。
+
+####   5.2 BLPOP 单个消息队列
+
+```
+BLPOP key [key ...] timeout:阻塞知道队列有消息或者超时
+```
+
+缺点：只能供一个消费者消费
+
+#### 5.3 PUB/SUB 主题订阅模型
+
+[订阅模型：](https://www.runoob.com/redis/redis-pub-sub.html)
+
+- 发送者（PUBLISH）发送消息，订阅者（SUBSCRIBE ）接收消息
+- Redis 客户端可以订阅任意数量的频道。
+
+缺点:消息是无状态的，无法保证可达。（订阅者收没收到发送者不知道）
+
+解决：专业MQ kafka等消息对列解决。
+
+![image-20210123023301910](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210123023301910.png)
+
+
+
+### 6、持久化
+
+#### 6.1 定义：
+
+- 就是把缓存存放到磁盘里面。
+- RDB（Redis DataBase）和AOF良种方式
+
+#### 6.2 RDB：Redis DataBase快照持久化
+
+- 是redis默认持久化机制。redis.conf文件里面有redis默认的持久化策略信息。
+
+- 快照持久化：保存（SAVE命令）某个时间点的全量数据快照（Snapshot快照）。如果中间数据发生写入，只会保存写入以前的数据。
+
+- SAVE：通过主线程来保存缓存到dump.rdb 文件。如果数据量大，比较耗时，**阻塞Redis服务器进程**。
+
+- BGSAVE:主线程fork一个子线程来保存缓存到dump.rdb 文件，**不阻塞主服务器进程**。
+
+
+**缺点：**
+
+ - 定时快照只是代表一段时间内的内存映像，所以系统重启会丢失上次快照与重启之间所有的数据。
+
+ - 内存全量同步，数据量过大会影响性能。
+
+   
+
+##### 6.2.1具体实现：
+
+手动方式：
+
+-  手动命令保存
+
+自动化方式：
+
+- 可以通过JAVA计时器或者定时任务来调用BGSAVE命令，文件名（fileName+时间），持久化数据库。
+
+
+![image-20210123234617310](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210123234617310.png)
+
+##### 6.2.2 BGSAVE 原理
+
+- 简单的实现方式：效率低
+
+![image-20210123234730880](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210123234730880.png)
+
+- COW：写实复制
+
+![image-20210123234810328](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210123234810328.png)
