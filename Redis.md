@@ -282,7 +282,7 @@ BLPOP key [key ...] timeout:阻塞知道队列有消息或者超时
 - 发送者（PUBLISH）发送消息，订阅者（SUBSCRIBE ）接收消息
 - Redis 客户端可以订阅任意数量的频道。
 
-缺点:消息是无状态的，无法保证可达。（订阅者收没收到发送者不知道）
+缺点：消息是无状态的，无法保证可达。（订阅者收没收到发送者不知道）
 
 解决：专业MQ kafka等消息对列解决。
 
@@ -337,4 +337,30 @@ BLPOP key [key ...] timeout:阻塞知道队列有消息或者超时
 
 - COW：写实复制
 
+  
+
 ![image-20210123234810328](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210123234810328.png)
+
+##### 6.2.3 恢复rdb文件
+
+- 只要将dump.rdb文件**放到我们redis的启动目录**即可，redis在启动的时候会自动检查dump.rdb恢复其中的数据。
+- 使用`config get dir`命令可以查看启动目录，只要dump.rdb文件在这个目录下，启动就会自动恢复其中的数据。
+
+#### 6.3 AOF：（Append Only File）
+
+##### 6.3.1 原理
+
+- **它是以日志的形式来记录每个写操作，将Redis执行过的所有指令都记录下来（读操作不记录），只许追加文件但不可以改写文件，Redis启动之初会读取该文件重新构建数据**，换而言之，Redis重启之后会根据日志文件的内容将写指令从前到后执行一次以完成数据的恢复工作。
+
+- AOF方式默认就是文件的无限追加，这样会导致文件会越来越大。
+- AOF默认是关闭状态。
+- AOF和RDB都有的话，优先用AOF。（先判断AOF开没开，没开就用RDB，开了就用AOF）
+
+![image-20210125014738921](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210125014738921.png)
+
+6.4 RDB、AOF区别：
+
+- Redis 4.0:RDB-AOF混合持久化方式。
+  - BGSAVE做镜像全量持久化（开机先恢复RDB），AOF做增量持久化（RDB以后的增量数据）。
+
+![image-20210125015028098](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210125015028098.png)
