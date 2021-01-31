@@ -21,21 +21,21 @@
   ![Redis](https://img-blog.csdnimg.cn/20210121224438647.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3hpZWxvbmcwNTA5,size_16,color_FFFFFF,t_70)
   ![Redis为啥快](https://img-blog.csdnimg.cn/20210121224824546.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3hpZWxvbmcwNTA5,size_16,color_FFFFFF,t_70)
 
-#### 1.2 IO
+#### 1.2 IO：多路复用
 
 I/O多路复用：提高redis多路复用。
 
-![image-20210121224638199](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210121224638199.png)
+![image-20210121224638199](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210121224638199.png)
 
 - selector:监听可以读写的文件，并返回这些文件描述符，就可以读写文件了 。
 
-![image-20210121225218954](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210121225218954.png)
+![image-20210121225218954](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210121225218954.png)
 
-![image-20210121225426459](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210121225426459.png)
+![image-20210121225426459](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210121225426459.png)
 
 - 更好的I/O
 
-![image-20210121225500735](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210121225500735.png)
+![image-20210121225500735](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210121225500735.png)
 
 ### 2、数据类型
 
@@ -141,7 +141,7 @@ redis 127.0.0.1:6379> SMEMBERS runoobkey
 
 #### 2.7 底层数据原理：待补充
 
-![image-20210122002246979](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210122002246979.png)
+![image-20210122002246979](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210122002246979.png)
 
 ### 3、KEY应用 实际场景
 
@@ -173,11 +173,11 @@ EXPIRE key seconds
 
 返回K1开头的所有Redis: KEYS命令
 
-![返回K1开头的所有Redis](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210122003507459.png)
+![返回K1开头的所有Redis](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210122003507459.png)
 
 返回K1开头的所有Redis：SCAN （count 10 可能返回0-10个）
 
-![image-20210122004332032](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210122004332032.png)
+![image-20210122004332032](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210122004332032.png)
 
 JAVA实现：
 
@@ -187,7 +187,7 @@ JAVA实现：
 
 [B站链接：](https://www.bilibili.com/video/BV1f5411b7ux?from=search&seid=5509058839420846836)
 
-![image-20210122225449606](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210122225449606.png)
+![image-20210122225449606](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210122225449606.png)
 
 ##### 3.2.1缓存雪崩：
 
@@ -253,7 +253,7 @@ if(res=1){//设置成功
 
 #### 4.2用以下原子性命令：
 
-![image-20210122234150434](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210122234150434.png)
+![image-20210122234150434](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210122234150434.png)
 
 
 
@@ -286,7 +286,7 @@ BLPOP key [key ...] timeout:阻塞知道队列有消息或者超时
 
 解决：专业MQ kafka等消息对列解决。
 
-![image-20210123023301910](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210123023301910.png)
+![image-20210123023301910](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210123023301910.png)
 
 
 
@@ -327,19 +327,19 @@ BLPOP key [key ...] timeout:阻塞知道队列有消息或者超时
 - 可以通过JAVA计时器或者定时任务来调用BGSAVE命令，文件名（fileName+时间），持久化数据库。
 
 
-![image-20210123234617310](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210123234617310.png)
+![image-20210123234617310](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210123234617310.png)
 
 ##### 6.2.2 BGSAVE 原理
 
 - 简单的实现方式：效率低
 
-![image-20210123234730880](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210123234730880.png)
+![image-20210123234730880](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210123234730880.png)
 
 - COW：写实复制
 
   
 
-![image-20210123234810328](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210123234810328.png)
+![image-20210123234810328](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210123234810328.png)
 
 ##### 6.2.3 恢复rdb文件
 
@@ -356,11 +356,35 @@ BLPOP key [key ...] timeout:阻塞知道队列有消息或者超时
 - AOF默认是关闭状态。
 - AOF和RDB都有的话，优先用AOF。（先判断AOF开没开，没开就用RDB，开了就用AOF）
 
-![image-20210125014738921](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210125014738921.png)
+![image-20210125014738921](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210125014738921.png)
 
 6.4 RDB、AOF区别：
 
 - Redis 4.0:RDB-AOF混合持久化方式。
   - BGSAVE做镜像全量持久化（开机先恢复RDB），AOF做增量持久化（RDB以后的增量数据）。
 
-![image-20210125015028098](C:\Users\X-Dragon\AppData\Roaming\Typora\typora-user-images\image-20210125015028098.png)
+![image-20210125015028098](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210125015028098.png)
+
+### 7、Pipeline:管道
+
+- Pipeline批量执行指令，节省多次I/O往返时间
+
+![image-20210127000224605](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210127000224605.png)
+
+#### 7.2 Redis的同步机制：主（Master）从(Slave)同步
+
+- 缺点：主服务器挂了就挂了
+
+- 全量同步
+
+![image-20210127000534850](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210127000534850.png)
+
+- 增量同步
+
+  ![image-20210127000730743](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210127000730743.png)
+
+#### 7.3 Redis Sentinel:哨兵机制
+
+![image-20210127001010961](C:\Users\Administrator\Desktop\NOTES\Redis.assets\image-20210127001010961.png)
+
+### 8、Redis集群原理
